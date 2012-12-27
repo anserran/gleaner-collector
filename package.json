@@ -1,0 +1,33 @@
+{
+  "name": "gleaner-collector",
+  "preferGlobal" : "false",
+  "version" : "0.1.0",
+  "author": "Ángel Serrano <angelserranolaguna@gmail.com>",
+  "description": "gleaner-collector, part from the gleaner framemwork",
+  "contributors": [
+    {
+      "name": "Ángel Serrano",
+      "email": "angelserranolaguna@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anserran/gleaner-collector.git"
+  },
+  "keywords": [
+    "rest",
+    "http",
+    "server",
+    "analytics"
+  ],
+  "dependencies" : {
+    "restify"   :  "*",
+    "mongoose" : "*",
+    "jshashes" : "*",
+    "async" : "*"
+  },
+  "devDependencies": {
+
+  },
+  "license": "MIT"
+}

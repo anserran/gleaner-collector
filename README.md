@@ -1,18 +1,18 @@
 ## Protocol to communicate with gleaner-collector
 
-gleaner-collector is the server-side part of gleaner that receives games traces and stores them in the database. 
+gleaner-collector is the server-side part of gleaner that receives games traces and stores them in the database.
 
 ### Start tracking
 
 To send traces to the gleaner-collector, the client must first ask permission to the server sending the following request:
 
-`POST start/:gamekey`
+`GET start/:gamekey`
 
- - `gamekey` is a unique identifier, known by gleaner, representing the game to track. 
+ - `gamekey` is a unique identifier, known by gleaner, representing the game to track.
 
 gleaner checks request credentials and if they're valid returns an http code `200` with an authorization object:
 
-`{ auth_token: 'some_auth_token' }`
+`{ sessionToken: 'some_auth_token' }`
 
 ### Sending traces
 
@@ -20,16 +20,19 @@ Clients sends traces to:
 
 `POST track`
 
-The request must set its `Authorization` header with the value returned in `auth_token`.
+The request must set its `Authorization` header with the value returned in `sessionToken`.
 
-The message body must contain a list of json object. Each of this object represents a trace, and must follow the following structure:
+The message body must contain a list of json objects. Each of this object represents a trace, and must follow the following structure:
 
-```{
-  type: 'trace_type',
+```javascript
+{
+	type: 'trace_type',
 	timeStamp: some_timestamp, // A timestamp with the moment this trace was generated
 	...
 	Other values
-}```
+}
+```
+`204` is returned if the list of traces is added and `406` if the format is incorrect.
 
 gleaner-collector only checks for fields `type` and `timeStamp`. Traces can contain as many fields as desired. However, many of the built-in tools in gleaner use two types of traces, `input`, representing direct interactions of players with input devices (as mouses, keyboards, controllers...) and `logic`, representing logic events in the game. They follow the next structure:
 
@@ -39,8 +42,8 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: some_timestamp,
 	device: 'some_device', // Predefined values: 'mouse', 'keyboard', 'screen'
 	action: 'some_action', // Predefined values: 'move', 'press', 'release', 'click', 'drag'
-	values: [ value_1, value_2... ], // To pass additional arguments. A 'mouse' input would contain a list with x and y coordinates and the button
 	target: 'target_id' // An identifier of the in-game element that processed the input event, if any
+	data: { key1: value, key2: value2, ...} // To pass additional arguments. A 'mouse' input would contain a x and y coordinates and the button
 }
 ```
 
@@ -50,8 +53,7 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: some_timestamp,
 	event: 'some_event', // Predefined values: 'game_start', 'game_end', 'game_quit', 'phase_start', 'phase_end', 'var_update'
 	target: 'some_id', // See examples below to understand this fields
-	value: some_value
-
+	data: { key1: value, key2: value2, ...}
 }
 ```
 
@@ -127,6 +129,6 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: new Date(),
 	event: 'var_update',
 	target: 'score',
-	value: 2500 // Player 'score' value is updated to 2500
+	data: { value: 2500 } // Player 'score' value is updated to 2500
 }
 ```
