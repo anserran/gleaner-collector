@@ -5,7 +5,7 @@ var dataStore = (function( ){
 	var SHA1 = new require('jshashes').SHA1();
 
 	var copyProperties = require('./gleaner-utils').copyProperties;
-	
+
 	mongoose.connect(config.creds.mongoose_auth);
 
 	var Schema = mongoose.Schema;
@@ -166,7 +166,7 @@ var dataStore = (function( ){
 				cb(session.gameId, session.userId, session.sessionId );
 			}
 		});
-		
+
 	};
 
 	return {
