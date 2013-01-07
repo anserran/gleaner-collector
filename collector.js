@@ -5,7 +5,7 @@
 * @param {Array} filters
 */
 var Collector = function( authenticator, dataStore, filters ){
-	
+
 	var async = require('async');
 	var restify = require('restify');
 	var server = restify.createServer();
@@ -67,7 +67,32 @@ var Collector = function( authenticator, dataStore, filters ){
 			res.end();
 		}
 	});
-	
+
+	server.get('/:collection', function(req, res, next){
+		var collection = null;
+		switch( req.params.collection ){
+			case 'sessions':
+			collection = 'Session';
+			break;
+			case 'games':
+			collection = 'Game';
+			break;
+		}
+		if ( collection !== null ){
+			dataStore.get( collection, req.params, function(err, data){
+				if ( err ){
+					res.send(err);
+				}
+				else {
+					res.send(data);
+				}
+			});
+		}
+		else {
+			res.send(404);
+		}
+	});
+
 	var listen = function( port, fn ){
 		server.listen( port, fn );
 	};

@@ -3,6 +3,7 @@ var dataStore = (function( ){
 	var config = require('./config');
 	var async = require('async');
 	var SHA1 = new require('jshashes').SHA1();
+	var HttpError = require('restify').HttpError;
 
 	var copyProperties = require('./gleaner-utils').copyProperties;
 
@@ -126,14 +127,16 @@ var dataStore = (function( ){
 				cb(err);
 			}
 			else {
-				Session.
+				if (game && game.id){
+					Session.
 					where('userId', userId).
 					where('gameId', game.gameId).
-						findOne( function( err, session ){
-							if ( err ){
-								cb(err);
-							}
-							else if ( session ){
+					findOne( function( err, session ){
+						if ( err ){
+							cb(err, null);
+						}
+						else {
+							if ( session ){
 								session.sessionId++;
 							}
 							else {
@@ -142,17 +145,23 @@ var dataStore = (function( ){
 								session.userId = userId;
 								session.sessionId = 0;
 							}
-							// FIXME salt here
-							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId);
-							session.save( function( err, s ){
-								if ( err ){
-									cb(null);
-								}
-								else{
-									cb(s.sessionKey);
-								}
-							});
+						// FIXME salt here
+						session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId);
+						session.save( function( err, s ){
+							if ( err ){
+								cb( err, null );
+							}
+							else{
+								cb( null, s.sessionKey);
+							}
+						});
+					}
+
 				});
+				}
+				else {
+					cb( new HttpError(400, 'Game key not found'), null);
+				}
 			}
 		});
 	};
@@ -169,11 +178,17 @@ var dataStore = (function( ){
 
 	};
 
+	// Gets
+	var get = function(collection, params, cb ){
+		mongoose.model(collection).find( cb );
+	};
+
 	return {
 		addTraces: addTraces,
 		checkCredentials: checkCredentials,
 		startSession: startSession,
-		getSessionInfo: getSessionInfo
+		getSessionInfo: getSessionInfo,
+		get: get
 	};
 
 })();

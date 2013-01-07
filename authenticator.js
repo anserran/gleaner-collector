@@ -4,14 +4,7 @@ var authenticator = (function(dataStore){
 
 	var generateSessionApiKey = function(credentials, gamekey, cb){
 		dataStore.checkCredentials( credentials, function( userId ){
-			dataStore.startSession( userId, gamekey, function(sessionApiKey ){
-				if ( sessionApiKey ){
-					cb(null, sessionApiKey);
-				}
-				else {
-					cb(new Error("Invalid gamekey"));
-				}
-			});
+			dataStore.startSession( userId, gamekey, cb);
 		});
 	};
 
