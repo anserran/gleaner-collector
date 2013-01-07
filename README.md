@@ -12,7 +12,7 @@ To send traces to the gleaner-collector, the client must first ask permission to
 
 gleaner checks request credentials and if they're valid returns an http code `200` with an authorization object:
 
-`{ sessionToken: 'some_auth_token' }`
+`{ sessionKey: 'some_auth_token' }`
 
 ### Sending traces
 

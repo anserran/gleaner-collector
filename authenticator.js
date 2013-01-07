@@ -13,8 +13,8 @@ var authenticator = (function(dataStore){
 			if ( gameId ){
 				for (var i = traces.length - 1; i >= 0; i--) {
 					traces[i].gameId = gameId;
-					traces[i].sessionId = userId;
-					traces[i].userId = sessionId;
+					traces[i].sessionId = sessionId;
+					traces[i].userId = userId;
 				}
 				cb( null );
 			}

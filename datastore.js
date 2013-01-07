@@ -30,7 +30,8 @@ var dataStore = (function( ){
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		event: { type: String },
-		data: { type: {} }
+		data: { type: {} },
+		target: String
 	});
 
 	var GameSchema = new Schema({
