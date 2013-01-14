@@ -3,7 +3,7 @@
   "preferGlobal" : "false",
   "version" : "0.1.0",
   "author": "Ángel Serrano <angelserranolaguna@gmail.com>",
-  "description": "gleaner-collector, part from the gleaner framemwork",
+  "description": "gleaner-collector, part of the gleaner framemwork",
   "contributors": [
     {
       "name": "Ángel Serrano",
@@ -24,7 +24,8 @@
     "restify"   :  "*",
     "mongoose" : "*",
     "jshashes" : "*",
-    "async" : "*"
+    "async" : "*",
+    "winston" : "*"
   },
   "devDependencies": {
 
