@@ -6,15 +6,17 @@
 */
 var Collector = function( authenticator, dataStore, filters ){
 
+	var log = require('winston');
 	var async = require('async');
 	var restify = require('restify');
 	var server = restify.createServer();
+	var config = require('./config');
 
 	server.use(restify.queryParser());
 	server.use(restify.bodyParser());
 
 	// Start tracking request.
-	server.get('/start/:gamekey', function(req, res, next){
+	server.get(config.apiroot + 'start/:gamekey', function(req, res, next){
 		// Authorization header must contain a valid authorization
 		if ( req.headers.authorization ){
 			authenticator.authenticate( req.headers.authorization, function( err, userId ){
@@ -40,7 +42,7 @@ var Collector = function( authenticator, dataStore, filters ){
 	});
 
 	// Receive traces
-	server.post('/track', function(req, res, next){
+	server.post(config.apiroot + 'track', function(req, res, next){
 		if ( req.params ){
 			var filtersApply = [];
 			// Apply filters to traces. Filters transfrom req.params
@@ -53,6 +55,7 @@ var Collector = function( authenticator, dataStore, filters ){
 					res.send(err);
 				}
 				else {
+					log.log('debug', req.params.length + ' traces added');
 					// When filters are done, we add the traces
 					dataStore.addTraces( req.params, function( err ){
 						if ( err ){
