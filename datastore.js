@@ -201,10 +201,20 @@ var dataStore = (function( ){
 		});
 	};
 
+	var checkSessionKey = function( sessionKey, cb ){
+		Session.where('sessionKey', sessionKey).findOne(function( err, session){
+			if ( session )
+				cb(true);
+			else
+				cb(false);
+		});
+	};
+
 	return {
 		addTraces: addTraces,
 		startSession: startSession,
-		addSessionInfo: addSessionInfo
+		addSessionInfo: addSessionInfo,
+		checkSessionKey: checkSessionKey
 	};
 
 })();

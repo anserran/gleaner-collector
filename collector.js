@@ -6,15 +6,18 @@
 */
 var Collector = function( authenticator, dataStore, filters ){
 
+	var log = require('winston');
 	var async = require('async');
 	var restify = require('restify');
 	var server = restify.createServer();
+	var config = require('./config').config;
 
 	server.use(restify.queryParser());
 	server.use(restify.bodyParser());
 
 	// Start tracking request.
-	server.get('/start/:gamekey', function(req, res, next){
+	server.get(config.apiroot + 'start/:gamekey', function(req, res, next){
+		log.log('info', 'start tracking' + req.headers.authorization );
 		// Authorization header must contain a valid authorization
 		if ( req.headers.authorization ){
 			authenticator.authenticate( req.headers.authorization, function( err, userId ){
@@ -40,19 +43,26 @@ var Collector = function( authenticator, dataStore, filters ){
 	});
 
 	// Receive traces
-	server.post('/track', function(req, res, next){
-		if ( req.params ){
-			var filtersApply = [];
-			// Apply filters to traces. Filters transfrom req.params
-			for (var i = 0; i < filters.length; i++) {
-				filtersApply.push(async.apply(filters[i], req, req.params ));
+	server.post(config.apiroot + 'track', function(req, res, next){
+		dataStore.checkSessionKey( req.headers.authorization, function( authorized ){
+			if (!authorized){
+				res.send(401);
+				return;
 			}
 
-			async.series( filtersApply, function( err, results ){
-				if ( err ){
-					res.send(err);
+			if ( req.params ){
+				var filtersApply = [];
+				// Apply filters to traces. Filters transfrom req.params
+				for (var i = 0; i < filters.length; i++) {
+					filtersApply.push(async.apply(filters[i], req, req.params ));
 				}
-				else {
+
+				async.series( filtersApply, function( err, results ){
+					if ( err ){
+						res.send(err);
+					}
+					else {
+						log.log('debug', req.params.length + ' traces added');
 					// When filters are done, we add the traces
 					dataStore.addTraces( req.params, function( err ){
 						if ( err ){
@@ -64,10 +74,11 @@ var Collector = function( authenticator, dataStore, filters ){
 					});
 				}
 			});
-		}
-		else {
-			res.send(400);
-		}
+			}
+			else {
+				res.send(400);
+			}
+		} );
 	});
 
 	var listen = function( port, fn ){
