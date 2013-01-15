@@ -132,18 +132,3 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	data: { value: 2500 } // Player 'score' value is updated to 2500
 }
 ```
-
-## Queries
-
-```javascript
-GET /collection?params
-```
-where __collection__ could be:
-
-* **games**: collection with the games tracked by gleaner
-* **sessions**: collection with the sessions accounted by gleaner
-* **logic**: collection with logic traces
-* **action**: collection with action traces
-
-and __params__ could be:
-* **func=some_func**: count
