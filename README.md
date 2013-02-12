@@ -65,7 +65,7 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: new Date(),
 	device: 'mouse',
 	action: 'press',
-	values: [0, 250, 600], // Pressed button 0 in coordinates (250, 600)
+	data: { button: 0, x: 250, y: 600 }, // Pressed button 0 in coordinates (250, 600)
 	target: null
 }
 ```
@@ -76,7 +76,7 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: new Date(),
 	device: 'keyboard',
 	action: 'click' // Typed
-	values: [ 'a' ], // 'a' was the character typed
+	data: { keycode: 'a' }, // 'a' was the character typed
 	target: 'spaceship' // The game entity with id 'spaceship' processed this input
 }
 ```
