@@ -9,7 +9,7 @@ module.exports.eadauthenticator = (function( ){
 	return {
 		authenticate: function( req, cb ){
 			if ( req.headers.authorization ){
-				cb( null, authorization );
+				cb( null, req.headers.authorization );
 			}
 			else {
 				cb(new HttpError(401));
@@ -21,12 +21,17 @@ module.exports.eadauthenticator = (function( ){
 module.exports.ipauthenticator = (function( ){
 	return {
 		authenticate: function( req, cb ){
-			var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
-			if ( ip ){
-				cb( null, ip );
+			if ( req.headers.authorization && req.headers.authorization !== "anonymus" ){
+				cb( null, req.headers.authorization );
 			}
 			else {
-				cb(new HttpError(401));
+				var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
+				if ( ip ){
+					cb( null, ip );
+				}
+				else {
+					cb(new HttpError(401));
+				}
 			}
 		}
 	};
