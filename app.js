@@ -30,7 +30,4 @@ var collector = require('./collector.js').Collector(
 		dataStore.addSessionInfo
 	]);
 
-// Start service
-collector.listen( config.port, function( ){
-	log.log('info', 'gleaner-collector listening in ' + collector.url() );
-});
+module.exports = collector;

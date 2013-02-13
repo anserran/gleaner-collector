@@ -16,7 +16,7 @@ var dataStore = (function( ){
 	var InputTraceSchema = new Schema({
 		userId: { type: String },
 		sessionId: { type: Number },
-		gameId: { type: String },
+		gameId: { type: Number },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		device: { type: String },
@@ -28,7 +28,7 @@ var dataStore = (function( ){
 	var LogicTraceSchema = new Schema({
 		userId: { type: String },
 		sessionId: { type: Number },
-		gameId: { type: String },
+		gameId: { type: Number },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		event: { type: String },
@@ -45,8 +45,9 @@ var dataStore = (function( ){
 	var SessionSchema = new Schema({
 		sessionKey: { type: String, required: true},
 		gameId: { type: Number, required: true },
-		userId: { type: Number, required: true },
-		sessionId: { type: Number, required: true }
+		userId: { type: String, required: true },
+		sessionId: { type: Number, required: true },
+		lastUpdate: { type: Date, required: true }
 	});
 
 	mongoose.model('InputTrace', InputTraceSchema);
@@ -90,6 +91,7 @@ var dataStore = (function( ){
 								session.userId = userId;
 								session.sessionId = 0;
 							}
+							session.lastUpdate = new Date();
 							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
 							session.save( function( err, s ){
 								if (err) {
@@ -203,8 +205,12 @@ var dataStore = (function( ){
 
 	var checkSessionKey = function( sessionKey, cb ){
 		Session.where('sessionKey', sessionKey).findOne(function( err, session){
-			if ( session )
+			if ( session ){
+				session.lastUpdate = new Date();
+				// If it works, it works, if it doesn't maybe next time does
+				session.save();
 				cb(true);
+			}
 			else
 				cb(false);
 		});

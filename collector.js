@@ -20,7 +20,7 @@ var Collector = function( authenticator, dataStore, filters ){
 		log.log('info', 'start tracking' + req.headers.authorization );
 		// Authorization header must contain a valid authorization
 		if ( req.headers.authorization ){
-			authenticator.authenticate( req.headers.authorization, function( err, userId ){
+			authenticator.authenticate( req, function( err, userId ){
 				if ( err ){
 					res.send(err);
 				}
@@ -81,7 +81,8 @@ var Collector = function( authenticator, dataStore, filters ){
 		} );
 	});
 
-	var listen = function( port, fn ){
+	var listen = function( fn ){
+		var port = require('./config').config.port;
 		server.listen( port, fn );
 	};
 
@@ -89,9 +90,14 @@ var Collector = function( authenticator, dataStore, filters ){
 		return server.url;
 	};
 
+	var getServer = function( ){
+		return server;
+	};
+
 	return {
 		listen: listen,
-		url: url
+		url: url,
+		getServer : getServer
 	};
 };
 
