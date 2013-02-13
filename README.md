@@ -1,6 +1,6 @@
 ## Protocol to communicate with gleaner-collector
 
-gleaner-collector is the server-side part of gleaner that receives games traces and stores them in the database.
+gleaner-collector is the server-side part of gleaner that receives games traces and stores them in the gleaner database.
 
 ### Start tracking
 
@@ -32,7 +32,7 @@ The message body must contain a list of json objects. Each of this object repres
 	Other values
 }
 ```
-`204` is returned if the list of traces is added and `406` if the format is incorrect.
+`204` is returned if the list of traces is added, `400` if the format is incorrect or `401` if user hasn't got permission.
 
 gleaner-collector only checks for fields `type` and `timeStamp`. Traces can contain as many fields as desired. However, many of the built-in tools in gleaner use two types of traces, `input`, representing direct interactions of players with input devices (as mouses, keyboards, controllers...) and `logic`, representing logic events in the game. They follow the next structure:
 
@@ -65,7 +65,7 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: new Date(),
 	device: 'mouse',
 	action: 'press',
-	values: [0, 250, 600], // Pressed button 0 in coordinates (250, 600)
+	data: { button: 0, x: 250, y: 600 }, // Pressed button 0 in coordinates (250, 600)
 	target: null
 }
 ```
@@ -76,7 +76,7 @@ gleaner-collector only checks for fields `type` and `timeStamp`. Traces can cont
 	timeStamp: new Date(),
 	device: 'keyboard',
 	action: 'click' // Typed
-	values: [ 'a' ], // 'a' was the character typed
+	data: { keycode: 'a' }, // 'a' was the character typed
 	target: 'spaceship' // The game entity with id 'spaceship' processed this input
 }
 ```
