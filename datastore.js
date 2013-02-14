@@ -73,24 +73,20 @@ var dataStore = (function( ){
 			}
 			else {
 				if (game && game.id){
-					Session.
-					where('userId', userId).
-					where('gameId', game.gameId).
-					findOne( function( err, session ){
+					Session.find( { 'userId' : userId, 'gameId' : game.gameId }, function( err, sessions ){
 						if ( err ){
 							cb(new HttpError(500));
 							log.log('error', err);
 						}
 						else {
-							if ( session ){
-								session.sessionId++;
+							var maxSession = 0;
+							for (var i = sessions.length - 1; i >= 0; i--) {
+								maxSession = sessions[i].sessionId > maxSession ? sessions[i].sessionId : maxSession;
 							}
-							else {
-								session = new Session();
-								session.gameId = game.gameId;
-								session.userId = userId;
-								session.sessionId = 0;
-							}
+							var session = new Session();
+							session.gameId = game.gameId;
+							session.userId = userId;
+							session.sessionId = maxSession + 1;
 							session.lastUpdate = new Date();
 							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
 							session.save( function( err, s ){

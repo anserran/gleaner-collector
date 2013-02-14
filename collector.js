@@ -22,7 +22,8 @@ var Collector = function( authenticator, dataStore, filters ){
 		if ( req.headers.authorization ){
 			authenticator.authenticate( req, function( err, userId ){
 				if ( err ){
-					res.send(err);
+					res.status(404);
+					res.end();
 				}
 				else {
 					dataStore.startSession( userId, req.params.gamekey, function( err, sessionKey ){
