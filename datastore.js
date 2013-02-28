@@ -4,8 +4,7 @@ var dataStore = (function( ){
 	var mongoose = require('mongoose');
 	var config = require('./config').config;
 	var async = require('async');
-	var SHA1 = new require('jshashes').SHA1();
-	var HttpError = require('restify').HttpError;
+	var SHA1 = new (require('jshashes').SHA1)();
 
 	var copyProperties = require('./gleaner-utils').copyProperties;
 
@@ -16,7 +15,7 @@ var dataStore = (function( ){
 	var InputTraceSchema = new Schema({
 		userId: { type: String },
 		sessionId: { type: Number },
-		gameId: { type: Number },
+		experiencekey: { type: String },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		device: { type: String },
@@ -28,7 +27,7 @@ var dataStore = (function( ){
 	var LogicTraceSchema = new Schema({
 		userId: { type: String },
 		sessionId: { type: Number },
-		gameId: { type: Number },
+		experiencekey: { type: String },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		event: { type: String },
@@ -36,15 +35,16 @@ var dataStore = (function( ){
 		target: String
 	});
 
-	var GameSchema = new Schema({
-		gameId: { type: Number },
-		title: { type: String },
-		gamekey: { type: String}
+	var ExperienceScheme = new Schema({
+		gameRef: { type: String },
+		name: { type: String },
+		experiencekey: { type: String, index: { unique: true, dropDups: true }},
+		tracking: { type: Boolean }
 	});
 
 	var SessionSchema = new Schema({
 		sessionKey: { type: String, required: true},
-		gameId: { type: Number, required: true },
+		experiencekey: { type: String, required: true },
 		userId: { type: String, required: true },
 		sessionId: { type: Number, required: true },
 		lastUpdate: { type: Date, required: true }
@@ -52,31 +52,33 @@ var dataStore = (function( ){
 
 	mongoose.model('InputTrace', InputTraceSchema);
 	mongoose.model('LogicTrace', LogicTraceSchema);
-	mongoose.model('Game', GameSchema);
+	mongoose.model('Experience', ExperienceScheme);
 	mongoose.model('Session', SessionSchema);
 
 	var InputTrace = mongoose.model('InputTrace');
 	var LogicTrace = mongoose.model('LogicTrace');
-	var Game = mongoose.model('Game');
+	var Experience = mongoose.model('Experience');
 	var Session = mongoose.model('Session');
+
+	var ev = require('./validators/experienceValidator.js')(Experience);
 
 	/**
 	 * Start session
 	 * @param  {String}   userId  user unique identifier
-	 * @param  {String}   gamekey key for the game to be tracked in this session
+	 * @param  {String}   experiencekey key for the experience to be tracked in this session
 	 * @param  {Function} cb      callback with an error and a session key
 	 */
-	var startSession = function( userId, gamekey, cb ){
-		Game.where('gamekey', gamekey).findOne( function(err, game){
+	var startSession = function( userId, experiencekey, cb ){
+		Experience.where('experiencekey', experiencekey).findOne( function(err, experience){
 			if ( err ){
-				cb(new HttpError(400, 'Game key not found'));
+				cb(400);
 			}
 			else {
-				if (game && game.id){
-					Session.find( { 'userId' : userId, 'gameId' : game.gameId }, function( err, sessions ){
+				if (experience && experience.experiencekey ){
+					Session.find( { 'userId' : userId, 'experiencekey' : experience.experiencekey }, function( err, sessions ){
 						if ( err ){
-							cb(new HttpError(500));
-							log.log('error', err);
+							cb(500);
+							console.log('error', err);
 						}
 						else {
 							var maxSession = 0;
@@ -84,15 +86,15 @@ var dataStore = (function( ){
 								maxSession = sessions[i].sessionId > maxSession ? sessions[i].sessionId : maxSession;
 							}
 							var session = new Session();
-							session.gameId = game.gameId;
+							session.experiencekey = experience.experiencekey;
 							session.userId = userId;
 							session.sessionId = maxSession + 1;
 							session.lastUpdate = new Date();
-							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
+							session.sessionKey = SHA1.b64(session.experiencekey + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
 							session.save( function( err, s ){
 								if (err) {
-									cb( new HttpError(500) );
-									log.log('error', err);
+									cb(500);
+									console.log('error', err);
 								}
 								else {
 									cb( null, s.sessionKey);
@@ -103,7 +105,7 @@ var dataStore = (function( ){
 					});
 				}
 				else {
-					cb(new HttpError(400, 'Game key not found'));
+					cb(400);
 				}
 			}
 		});
@@ -162,8 +164,8 @@ var dataStore = (function( ){
 			],
 			function( err ){
 				if (err){
-					cb(new HttpError(500));
-					log.log('error', err);
+					cb(500);
+					console.log('error', err);
 				}
 				else{
 					cb(null);
@@ -174,23 +176,23 @@ var dataStore = (function( ){
 	/**
 	 * Filter to add session info to traces
 	 * @param {Object}   req    request
-	 * @param {[type]}   traces traces
+	 * @param {Array}   traces traces
 	 * @param {Function} cb     callback function
 	 */
 	var addSessionInfo = function(req, traces, cb){
 		Session.where('sessionKey', req.headers.authorization).findOne(function( err, session){
 			if ( err || !session ){
 				if ( err ){
-					log.err(err);
+					console.log(err);
 				}
 				else {
-					log.warn('Session with id %s not found', req.headers.authorization );
+					console.log('Session with id ' + req.headers.authorization + ' not found' );
 				}
-				cb( new HttpError(401, "Invalid session key"));
+				cb(401);
 			}
 			else {
 				for (var i = traces.length - 1; i >= 0; i--) {
-					traces[i].gameId = session.gameId;
+					traces[i].experiencekey = session.experiencekey;
 					traces[i].sessionId = session.sessionId;
 					traces[i].userId = session.userId;
 				}
@@ -212,11 +214,30 @@ var dataStore = (function( ){
 		});
 	};
 
+	var addExperience = function( req, res ){
+		ev.validate( req, function( err, experience ){
+			if ( err ){
+				res.send(400, err);
+			}
+			else {
+				res.send(200, experience);
+			}
+		});
+	};
+
+	var getExperiences = function( callback ){
+		Experience.find(function( err, experiences ){
+			callback(err, experiences || {});
+		});
+	};
+
 	return {
 		addTraces: addTraces,
 		startSession: startSession,
 		addSessionInfo: addSessionInfo,
-		checkSessionKey: checkSessionKey
+		checkSessionKey: checkSessionKey,
+		addExperience: addExperience,
+		getExperiences: getExperiences
 	};
 
 })();

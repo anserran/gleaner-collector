@@ -21,11 +21,9 @@
     "analytics"
   ],
   "dependencies" : {
-    "restify"   :  "*",
     "mongoose" : "*",
     "jshashes" : "*",
-    "async" : "*",
-    "winston" : "*"
+    "async" : "*"
   },
   "devDependencies": {
 
