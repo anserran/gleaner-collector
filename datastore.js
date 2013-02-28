@@ -1,5 +1,4 @@
 var dataStore = (function( ){
-	var log = require('winston');
 
 	var mongoose = require('mongoose');
 	var config = require('./config').config;
