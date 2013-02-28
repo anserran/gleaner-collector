@@ -111,6 +111,14 @@ var dataStore = (function( ){
 		});
 	};
 
+	var getSessions = function( lastMinutes, experiencekey, callback ){
+		var minimumDate = new Date(new Date().getTime() - lastMinutes * 60000);
+		Session.find({ experiencekey: experiencekey, lastUpdate: {$gt: minimumDate}},
+			function(err, sessions ){
+				callback( err, sessions );
+			});
+	};
+
 	var addTraces = function( traces, cb ){
 		var logicTraces = [];
 		var inputTraces = [];
@@ -205,7 +213,6 @@ var dataStore = (function( ){
 		Session.where('sessionKey', sessionKey).findOne(function( err, session){
 			if ( session ){
 				session.lastUpdate = new Date();
-				// If it works, it works, if it doesn't maybe next time does
 				session.save();
 				cb(true);
 			}
@@ -225,9 +232,17 @@ var dataStore = (function( ){
 		});
 	};
 
-	var getExperiences = function( callback ){
-		Experience.find(function( err, experiences ){
-			callback(err, experiences || {});
+	var getExperiences = function( gameId, callback ){
+		Experience.find({ gameRef: gameId },
+			function( err, experiences ){
+				callback(err, experiences || {});
+			}
+		);
+	};
+
+	var getExperience = function( experiencekey, callback ){
+		Experience.findOne({experiencekey: experiencekey}, function( err, experience ){
+			callback(err, experience);
 		});
 	};
 
@@ -237,7 +252,9 @@ var dataStore = (function( ){
 		addSessionInfo: addSessionInfo,
 		checkSessionKey: checkSessionKey,
 		addExperience: addExperience,
-		getExperiences: getExperiences
+		getExperiences: getExperiences,
+		getExperience: getExperience,
+		getSessions: getSessions
 	};
 
 })();
