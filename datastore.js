@@ -125,6 +125,10 @@ var dataStore = (function( ){
 		}
 	};
 
+	var getSession = function( sessionId, callback ){
+		Session.findOne({_id: sessionId}, callback);
+	};
+
 	var addTraces = function( traces, cb ){
 		var logicTraces = [];
 		var inputTraces = [];
@@ -294,7 +298,8 @@ var dataStore = (function( ){
 		getExperience: getExperience,
 		getSessions: getSessions,
 		getTraces: getTraces,
-		getFinalVarValue: getFinalVarValue
+		getFinalVarValue: getFinalVarValue,
+		getSession: getSession
 	};
 
 })();
