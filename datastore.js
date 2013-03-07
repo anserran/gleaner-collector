@@ -111,11 +111,18 @@ var dataStore = (function( ){
 	};
 
 	var getSessions = function( lastMinutes, experiencekey, callback ){
-		var minimumDate = new Date(new Date().getTime() - lastMinutes * 60000);
-		Session.find({ experiencekey: experiencekey, lastUpdate: {$gt: minimumDate}},
-			function(err, sessions ){
-				callback( err, sessions );
-			});
+		if ( lastMinutes >= 1 ){
+			var minimumDate = new Date(new Date().getTime() - lastMinutes * 60000);
+			Session.find({ experiencekey: experiencekey, lastUpdate: {$gt: minimumDate}},
+				function(err, sessions ){
+					callback( err, sessions );
+				});
+		} else {
+			Session.find({ experiencekey: experiencekey},
+				function(err, sessions ){
+					callback( err, sessions );
+				});
+		}
 	};
 
 	var addTraces = function( traces, cb ){
@@ -245,6 +252,38 @@ var dataStore = (function( ){
 		});
 	};
 
+	var getTraces = function( type, where, callback ){
+		switch( type ){
+			case 'logic':
+				LogicTrace.find(where, callback);
+			break;
+			case 'input':
+				InputTrace.find(where, callback);
+			break;
+			default:
+				callback();
+		}
+	};
+
+	var getFinalVarValue = function( session, varName, initialValue, callback ){
+		var where = {
+			event: 'var_update',
+			sessionId: session.sessionId,
+			userId: session.userId,
+			experiencekey: session.experiencekey,
+			target: varName
+		};
+
+		LogicTraces.findOne(where).sort('timeStamp', -1).execFind( function(err, trace){
+			if (trace && trace.data && trace.data.value ){
+				callback(trace.data.value);
+			}
+			else {
+				callback(initialValue);
+			}
+		});
+	};
+
 	return {
 		addTraces: addTraces,
 		startSession: startSession,
@@ -253,7 +292,9 @@ var dataStore = (function( ){
 		addExperience: addExperience,
 		getExperiences: getExperiences,
 		getExperience: getExperience,
-		getSessions: getSessions
+		getSessions: getSessions,
+		getTraces: getTraces,
+		getFinalVarValue: getFinalVarValue
 	};
 
 })();
