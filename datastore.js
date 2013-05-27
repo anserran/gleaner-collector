@@ -1,20 +1,17 @@
-var dataStore = (function( ){
+var DataStore = function( config ){
 	var mongoose = require('mongoose');
-	var config = require('./config').config;
 	var async = require('async');
-	var SHA1 = new require('jshashes').SHA1();
-	var HttpError = require('restify').HttpError;
+	var SHA1 = new (require('jshashes').SHA1)();
 
 	var copyProperties = require('./gleaner-utils').copyProperties;
 
 	mongoose.connect(config.mongoose_auth);
 
-	var Schema = mongoose.Schema;
+	var Schema = mongoose.Schema,
+		ObjectId = Schema.ObjectId;
 
 	var InputTraceSchema = new Schema({
-		userId: { type: String },
-		sessionId: { type: Number },
-		gameId: { type: Number },
+		usersessionkey: { type: String },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		serverTimeStamp : { type: Date, required: true },
@@ -25,9 +22,7 @@ var dataStore = (function( ){
 	});
 
 	var LogicTraceSchema = new Schema({
-		userId: { type: String },
-		sessionId: { type: Number },
-		gameId: { type: Number },
+		usersessionkey: { type: String },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
 		serverTimeStamp : { type: Date, required: true },
@@ -36,83 +31,76 @@ var dataStore = (function( ){
 		target: String
 	});
 
-	var GameSchema = new Schema({
-		gameId: { type: Number },
-		title: { type: String },
-		gamekey: { type: String}
+	var SessionScheme = new Schema({
+		name: { type: String },
+		game: { type: String },
+		sessionkey: { type: String },
+		enabled: { type: Boolean },
+		owner: { type: String }
 	});
 
 	var UserSessionSchema = new Schema({
-		sessionKey: { type: String, required: true},
-		gameId: { type: Number, required: true },
+		session: ObjectId,
 		userId: { type: String, required: true },
+		usersessionkey: { type: String, required: true},
 		ip: { type: String, required: true },
-		sessionId: { type: Number, required: true },
+		firstUpdate: { type: Date, required: true },
 		lastUpdate: { type: Date, required: true }
 	});
 
 	mongoose.model('InputTrace', InputTraceSchema);
 	mongoose.model('LogicTrace', LogicTraceSchema);
-	mongoose.model('Game', GameSchema);
+	mongoose.model('Session', SessionScheme);
 	mongoose.model('UserSession', UserSessionSchema);
 
 	var InputTrace = mongoose.model('InputTrace');
 	var LogicTrace = mongoose.model('LogicTrace');
-	var Game = mongoose.model('Game');
+	var Session = mongoose.model('Session');
 	var UserSession = mongoose.model('UserSession');
 
 	/**
 	 * Start session
 	 * @param  {Object}   req     Original request
 	 * @param  {String}   userId  user unique identifier
-	 * @param  {String}   gamekey key for the game to be tracked in this session
+	 * @param  {String}   sessionkey key for the session to be tracked
 	 * @param  {Function} cb      callback with an error and a session key
 	 */
-	var startSession = function( req, userId, gamekey, cb ){
-		Game.where('gamekey', gamekey).findOne( function(err, game){
+	var startSession = function( req, userId, sessionkey, cb ){
+		Session.where('sessionkey', sessionkey).findOne( function( err, session ){
 			if ( err ){
-				cb(new HttpError(400, 'Game key not found'));
+				cb(400);
 			}
-			else {
-				if (game && game.id){
-					UserSession.find( { 'userId' : userId, 'gameId' : game.gameId }, function( err, sessions ){
-						if ( err ){
-							cb(new HttpError(500));
-							log.log('error', err);
+			else if (session && session.sessionkey ){
+				var userSession = new UserSession();
+				userSession.session = session._id;
+				userSession.userId = userId;
+				userSession.usersessionkey = SHA1.b64(session._id.toString() + ':' + userId + ":" + config.sessionSalt );
+				userSession.ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
+				userSession.firstUpdate = new Date();
+				userSession.lastUpdate = new Date();
+				userSession.save( function( err, s ){
+						if (err) {
+							cb(500);
+							console.log('error', err);
 						}
 						else {
-							var maxSession = 0;
-							for (var i = sessions.length - 1; i >= 0; i--) {
-								maxSession = sessions[i].sessionId > maxSession ? sessions[i].sessionId : maxSession;
-							}
-							var session = new Session();
-							session.gameId = game.gameId;
-							session.userId = userId;
-							session.sessionId = maxSession + 1;
-							session.lastUpdate = new Date();
-							session.ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
-							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
-							session.save( function( err, s ){
-								if (err) {
-									cb( new HttpError(500) );
-									log.log('error', err);
-								}
-								else {
-									cb( null, s.sessionKey);
-								}
-							});
+							cb( null, s.usersessionkey );
 						}
-
 					});
-				}
-				else {
-					cb(new HttpError(400, 'Game key not found'));
-				}
+			}
+			else {
+				cb(400);
 			}
 		});
 	};
 
-	var addTraces = function( traces, cb ){
+	/**
+	 * Add traces to the datastore
+	 * @param  {Array}    traces A list of traces
+	 * @param  {Function} cb     Calblack taking an error
+	 */
+	var addTraces = function( req, traces, cb ){
+		addSessionInfo(req, traces);
 		var logicTraces = [];
 		var inputTraces = [];
 		for (var i = 0; i < traces.length; i++) {
@@ -165,8 +153,8 @@ var dataStore = (function( ){
 			],
 			function( err ){
 				if (err){
-					cb(new HttpError(500));
-					log.log('error', err);
+					cb(500);
+					console.log('error', err);
 				}
 				else{
 					cb(null);
@@ -177,36 +165,18 @@ var dataStore = (function( ){
 	/**
 	 * Filter to add session info to traces
 	 * @param {Object}   req    request
-	 * @param {[type]}   traces traces
-	 * @param {Function} cb     callback function
+	 * @param {Array}   traces traces
 	 */
-	var addSessionInfo = function(req, traces, cb){
-		Session.where('sessionKey', req.headers.authorization).findOne(function( err, session){
-			if ( err || !session ){
-				if ( err ){
-					log.err(err);
-				}
-				else {
-					log.warn('Session with id %s not found', req.headers.authorization );
-				}
-				cb( new HttpError(401, "Invalid session key"));
-			}
-			else {
-				for (var i = traces.length - 1; i >= 0; i--) {
-					traces[i].gameId = session.gameId;
-					traces[i].sessionId = session.sessionId;
-					traces[i].userId = session.userId;
-				}
-				cb( null );
-			}
-		});
+	var addSessionInfo = function(req, traces ){
+		for (var i = traces.length - 1; i >= 0; i--) {
+			traces[i].usersessionkey = req.headers.authorization;
+		}
 	};
 
-	var checkSessionKey = function( sessionKey, cb ){
-		Session.where('sessionKey', sessionKey).findOne(function( err, session){
+	var checkSessionKey = function( userSessionKey, cb ){
+		UserSession.where('usersessionkey', userSessionKey).findOne(function( err, session){
 			if ( session ){
 				session.lastUpdate = new Date();
-				// If it works, it works, if it doesn't maybe next time does
 				session.save();
 				cb(true);
 			}
@@ -222,6 +192,6 @@ var dataStore = (function( ){
 		checkSessionKey: checkSessionKey
 	};
 
-})();
+};
 
-module.exports = dataStore;
+module.exports = DataStore;

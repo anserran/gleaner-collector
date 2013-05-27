@@ -3,8 +3,6 @@ This authenticator is done in some experiments with the e-Adventure platform.
 Basically, accepts any authorization (other than null and undefined) and
 returns it as user id.
 */
-var HttpError = require('restify').HttpError;
-
 module.exports.eadauthenticator = (function( ){
 	return {
 		authenticate: function( req, cb ){
@@ -12,7 +10,7 @@ module.exports.eadauthenticator = (function( ){
 				cb( null, req.headers.authorization );
 			}
 			else {
-				cb(new HttpError(401));
+				cb(401);
 			}
 		}
 	};
@@ -30,7 +28,7 @@ module.exports.ipauthenticator = (function( ){
 					cb( null, ip );
 				}
 				else {
-					cb(new HttpError(401));
+					cb(401);
 				}
 			}
 		}
