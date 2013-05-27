@@ -4,7 +4,7 @@
 * @param {Object} dataStore access to database
 * @param {Array} filters a list with filters to apply to every trace received
 */
-var Collector = function( configuration, dataStore, filterList ){
+var Collector = function( configuration, dataStore, filtersList ){
 	var async = require('async');
 	var authenticator = configuration.authenticator;
 	var filters = filtersList;

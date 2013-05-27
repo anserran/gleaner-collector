@@ -1,8 +1,11 @@
 {
   "name": "gleaner-collector",
-  "preferGlobal" : false,
-  "version" : "0.1.0",
-  "author": "Ángel Serrano <angelserranolaguna@gmail.com>",
+  "preferGlobal": false,
+  "version": "0.1.0",
+  "author": {
+    "name": "Ángel Serrano",
+    "email": "angelserranolaguna@gmail.com"
+  },
   "description": "gleaner-collector, part of the gleaner framemwork",
   "contributors": [
     {
@@ -21,14 +24,20 @@
     "server",
     "analytics"
   ],
-  "dependencies" : {
-    "restify"   :  "2.5.x",
-    "mongoose" : "3.6.x",
-    "jshashes" : "1.0.x",
-    "async" : "0.2.x"
+  "dependencies": {
+    "restify": "2.5.x",
+    "mongoose": "3.6.x",
+    "jshashes": "1.0.x",
+    "async": "0.2.x"
   },
-  "devDependencies": {
-
-  },
+  "devDependencies": {},
   "license": "MIT",
+  "readme": "## Protocol to communicate with gleaner-collector\n\ngleaner-collector is the server-side part of gleaner that receives games traces and stores them in the gleaner database.\n\n### Start tracking\n\nTo send traces to the gleaner-collector, the client must first ask permission to the server sending the following request:\n\n`GET start/:gamekey`\n\n - `gamekey` is a unique identifier, known by gleaner, representing the game to track.\n\ngleaner checks request credentials and if they're valid returns an http code `200` with an authorization object:\n\n`{ sessionKey: 'some_auth_token' }`\n\n### Sending traces\n\nClients sends traces to:\n\n`POST track`\n\nThe request must set its `Authorization` header with the value returned in `sessionToken`.\n\nThe message body must contain a list of json objects. Each of this object represents a trace, and must follow the following structure:\n\n```javascript\n{\n\ttype: 'trace_type',\n\ttimeStamp: some_timestamp, // A timestamp with the moment this trace was generated\n\t...\n\tOther values\n}\n```\n`204` is returned if the list of traces is added, `400` if the format is incorrect or `401` if user hasn't got permission.\n\ngleaner-collector only checks for fields `type` and `timeStamp`. Traces can contain as many fields as desired. However, many of the built-in tools in gleaner use two types of traces, `input`, representing direct interactions of players with input devices (as mouses, keyboards, controllers...) and `logic`, representing logic events in the game. They follow the next structure:\n\n```javascript\n{\n\ttype: 'input',\n\ttimeStamp: some_timestamp,\n\tdevice: 'some_device', // Predefined values: 'mouse', 'keyboard', 'screen'\n\taction: 'some_action', // Predefined values: 'move', 'press', 'release', 'click', 'drag'\n\ttarget: 'target_id' // An identifier of the in-game element that processed the input event, if any\n\tdata: { key1: value, key2: value2, ...} // To pass additional arguments. A 'mouse' input would contain a x and y coordinates and the button\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: some_timestamp,\n\tevent: 'some_event', // Predefined values: 'game_start', 'game_end', 'game_quit', 'phase_start', 'phase_end', 'var_update'\n\ttarget: 'some_id', // See examples below to understand this fields\n\tdata: { key1: value, key2: value2, ...}\n}\n```\n\n#### Examples:\n\n```javascript\n{\n\ttype: 'input',\n\ttimeStamp: new Date(),\n\tdevice: 'mouse',\n\taction: 'press',\n\tdata: { button: 0, x: 250, y: 600 }, // Pressed button 0 in coordinates (250, 600)\n\ttarget: null\n}\n```\n\n```javascript\n{\n\ttype: 'input',\n\ttimeStamp: new Date(),\n\tdevice: 'keyboard',\n\taction: 'click' // Typed\n\tdata: { keycode: 'a' }, // 'a' was the character typed\n\ttarget: 'spaceship' // The game entity with id 'spaceship' processed this input\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'game_start' // The first trace to be sent\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'game_quit' // Player quits the game before finishing it\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'game_end' // Player finishes the game\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'phase_start',\n\ttarget: 'phase 1' // Player enters 'phase 1' in the game\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'phase_end',\n\ttarget: 'final boss' // Player finishes the phase 'final boss'\n}\n```\n\n```javascript\n{\n\ttype: 'logic',\n\ttimeStamp: new Date(),\n\tevent: 'var_update',\n\ttarget: 'score',\n\tdata: { value: 2500 } // Player 'score' value is updated to 2500\n}\n```\n",
+  "readmeFilename": "README.md",
+  "_id": "gleaner-collector@0.1.0",
+  "dist": {
+    "shasum": "73139d107421e139daeb4d3ee7c7dc12ddd48b5e"
+  },
+  "_resolved": "git+ssh://git@github.com/:anserran/gleaner-collector.git#80e7216045fd6013f1a968b178953ed30f7a2807",
+  "_from": "public@git+ssh://git@github.com:anserran/gleaner-collector.git"
 }
