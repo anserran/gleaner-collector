@@ -6,7 +6,6 @@
 */
 var Collector = function( authenticator, dataStore, filters ){
 
-	var log = require('winston');
 	var async = require('async');
 	var restify = require('restify');
 	var server = restify.createServer();
@@ -17,16 +16,16 @@ var Collector = function( authenticator, dataStore, filters ){
 
 	// Start tracking request.
 	server.get(config.apiroot + 'start/:gamekey', function(req, res, next){
-		log.log('info', 'start tracking' + req.headers.authorization );
+		console.log('Start tracking: ' + req.headers.authorization );
 		// Authorization header must contain a valid authorization
 		if ( req.headers.authorization ){
 			authenticator.authenticate( req, function( err, userId ){
 				if ( err ){
-					res.status(404);
+					res.status(401);
 					res.end();
 				}
 				else {
-					dataStore.startSession( userId, req.params.gamekey, function( err, sessionKey ){
+					dataStore.startSession( req, userId, req.params.gamekey, function( err, sessionKey ){
 						if (err){
 							res.send(err);
 						}

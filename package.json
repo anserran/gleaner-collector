@@ -1,6 +1,6 @@
 {
   "name": "gleaner-collector",
-  "preferGlobal" : "false",
+  "preferGlobal" : false,
   "version" : "0.1.0",
   "author": "Ángel Serrano <angelserranolaguna@gmail.com>",
   "description": "gleaner-collector, part of the gleaner framemwork",
@@ -21,11 +21,10 @@
     "analytics"
   ],
   "dependencies" : {
-    "restify"   :  "*",
-    "mongoose" : "*",
-    "jshashes" : "*",
-    "async" : "*",
-    "winston" : "*"
+    "restify"   :  "2.5.x",
+    "mongoose" : "3.6.x",
+    "jshashes" : "1.0.x",
+    "async" : "0.2.x"
   },
   "devDependencies": {
 

@@ -8,9 +8,6 @@ to start listening to traces. Change the appropriate settings in 'config.js'.
 
  */
 
-var log = require('winston');
-log.add(log.transports.File, {filename: 'gleaner-collector.log', json: false});
-
 // Collector configuration
 var config = require('./config').config;
 

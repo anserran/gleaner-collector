@@ -1,6 +1,4 @@
 var dataStore = (function( ){
-	var log = require('winston');
-
 	var mongoose = require('mongoose');
 	var config = require('./config').config;
 	var async = require('async');
@@ -19,6 +17,7 @@ var dataStore = (function( ){
 		gameId: { type: Number },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
+		serverTimeStamp : { type: Date, required: true },
 		device: { type: String },
 		action: { type: String },
 		data: { type: {} },
@@ -31,6 +30,7 @@ var dataStore = (function( ){
 		gameId: { type: Number },
 		type : { type: String, required: true },
 		timeStamp : { type: Date, required: true },
+		serverTimeStamp : { type: Date, required: true },
 		event: { type: String },
 		data: { type: {} },
 		target: String
@@ -42,10 +42,11 @@ var dataStore = (function( ){
 		gamekey: { type: String}
 	});
 
-	var SessionSchema = new Schema({
+	var UserSessionSchema = new Schema({
 		sessionKey: { type: String, required: true},
 		gameId: { type: Number, required: true },
 		userId: { type: String, required: true },
+		ip: { type: String, required: true },
 		sessionId: { type: Number, required: true },
 		lastUpdate: { type: Date, required: true }
 	});
@@ -53,27 +54,28 @@ var dataStore = (function( ){
 	mongoose.model('InputTrace', InputTraceSchema);
 	mongoose.model('LogicTrace', LogicTraceSchema);
 	mongoose.model('Game', GameSchema);
-	mongoose.model('Session', SessionSchema);
+	mongoose.model('UserSession', UserSessionSchema);
 
 	var InputTrace = mongoose.model('InputTrace');
 	var LogicTrace = mongoose.model('LogicTrace');
 	var Game = mongoose.model('Game');
-	var Session = mongoose.model('Session');
+	var UserSession = mongoose.model('UserSession');
 
 	/**
 	 * Start session
+	 * @param  {Object}   req     Original request
 	 * @param  {String}   userId  user unique identifier
 	 * @param  {String}   gamekey key for the game to be tracked in this session
 	 * @param  {Function} cb      callback with an error and a session key
 	 */
-	var startSession = function( userId, gamekey, cb ){
+	var startSession = function( req, userId, gamekey, cb ){
 		Game.where('gamekey', gamekey).findOne( function(err, game){
 			if ( err ){
 				cb(new HttpError(400, 'Game key not found'));
 			}
 			else {
 				if (game && game.id){
-					Session.find( { 'userId' : userId, 'gameId' : game.gameId }, function( err, sessions ){
+					UserSession.find( { 'userId' : userId, 'gameId' : game.gameId }, function( err, sessions ){
 						if ( err ){
 							cb(new HttpError(500));
 							log.log('error', err);
@@ -88,6 +90,7 @@ var dataStore = (function( ){
 							session.userId = userId;
 							session.sessionId = maxSession + 1;
 							session.lastUpdate = new Date();
+							session.ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
 							session.sessionKey = SHA1.b64(session.gameId + ':' + session.userId + ':' + session.sessionId + ":" + config.sessionSalt );
 							session.save( function( err, s ){
 								if (err) {
