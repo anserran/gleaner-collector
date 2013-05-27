@@ -1,30 +1,28 @@
-/*
-Collector main service.
-Run:
-
-node app.js
-
-to start listening to traces. Change the appropriate settings in 'config.js'.
-
- */
-
-// Collector configuration
-var config = require('./config').config;
-
 // Data store (MongoDB wrapper)
-var dataStore = require('./datastore.js');
+var DataStore = require('./datastore.js');
+var Collector = require('./collector.js');
 
-// Authentication
-var authenticator = config.authenticator;
+var GleanerCollector = function( configuration, filters ){
+	// Collector configuration
+	var defaultConfiguration = require('./defaultconfig.js');
+	if ( configuration ){
+		for ( var att in defaultConfiguration ){
+			configuration[att] = configuration[att] || defaultConfiguration[att];
+		}
+	}
+	else {
+		configuration = defaultConfiguration;
+	}
+	var dataStore = new DataStore(configuration.authenticator);
+	var collector = new Collector(configuration, dataStore,
+		[
+			require('./gleaner-utils.js').serverTimestamp
+		]);
 
-// Collector
-var collector = require('./collector.js').Collector(
-	authenticator,
-	dataStore,
-	// Filters
-	[
-		require('./gleaner-utils.js').serverTimestamp,
-		dataStore.addSessionInfo
-	]);
+	for (var i = filters.length - 1; i >= 0; i--) {
+		collector.addFilter(filters[i]);
+	}
 
-module.exports = collector;
+};
+
+module.exports = GleanerCollector;

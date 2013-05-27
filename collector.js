@@ -4,19 +4,18 @@
 * @param {Object} dataStore access to database
 * @param {Array} filters a list with filters to apply to every trace received
 */
-var Collector = function( authenticator, dataStore, filters ){
-
+var Collector = function( configuration, dataStore, filterList ){
 	var async = require('async');
-	var restify = require('restify');
-	var server = restify.createServer();
-	var config = require('./config').config;
+	var authenticator = configuration.authenticator;
+	var filters = filtersList;
 
-	server.use(restify.queryParser());
-	server.use(restify.bodyParser());
+	function addFilter( filter ){
+		filters.push(filter);
+	}
 
-	// Start tracking request.
-	server.get(config.apiroot + 'start/:gamekey', function(req, res, next){
-		console.log('Start tracking: ' + req.headers.authorization );
+	// Start tracking request
+	function start(req, res){
+		var sessionkey = req.url.substr(req.url.lastIndexOf('/') + 1);
 		// Authorization header must contain a valid authorization
 		if ( req.headers.authorization ){
 			authenticator.authenticate( req, function( err, userId ){
@@ -25,13 +24,14 @@ var Collector = function( authenticator, dataStore, filters ){
 					res.end();
 				}
 				else {
-					dataStore.startSession( req, userId, req.params.gamekey, function( err, sessionKey ){
+					dataStore.startSession( req, userId, sessionkey, function( err, usersessionkey ){
 						if (err){
 							res.send(err);
 						}
 						else {
+							console.log('Start tracking ' + req.headers.authorization );
 							res.status(200);
-							res.send({ sessionKey: sessionKey });
+							res.send({ sessionKey: usersessionkey });
 						}
 					});
 				}
@@ -40,21 +40,21 @@ var Collector = function( authenticator, dataStore, filters ){
 		else {
 			res.send(401);
 		}
-	});
+	}
 
 	// Receive traces
-	server.post(config.apiroot + 'track', function(req, res, next){
+	function track(req, res){
 		dataStore.checkSessionKey( req.headers.authorization, function( authorized ){
 			if (!authorized){
 				res.send(401);
 				return;
 			}
 
-			if ( req.params ){
+			if ( req.body ){
 				var filtersApply = [];
-				// Apply filters to traces. Filters transfrom req.params
+				// Apply filters to traces. Filters transfrom req.body
 				for (var i = 0; i < filters.length; i++) {
-					filtersApply.push(async.apply(filters[i], req, req.params ));
+					filtersApply.push(async.apply(filters[i], req, req.body ));
 				}
 
 				async.series( filtersApply, function( err, results ){
@@ -62,16 +62,16 @@ var Collector = function( authenticator, dataStore, filters ){
 						res.send(err);
 					}
 					else {
-						log.log('debug', req.params.length + ' traces added');
-					// When filters are done, we add the traces
-					dataStore.addTraces( req.params, function( err ){
-						if ( err ){
-							res.send(err);
-						}
-						else {
-							res.send(204);
-						}
-					});
+						console.log(req.body.length + ' traces added');
+						// When filters are done, we add the traces
+						dataStore.addTraces( req, req.body, function( err ){
+							if ( err ){
+								res.send(err);
+							}
+							else {
+								res.send(204);
+							}
+						});
 				}
 			});
 			}
@@ -79,26 +79,13 @@ var Collector = function( authenticator, dataStore, filters ){
 				res.send(400);
 			}
 		} );
-	});
-
-	var listen = function( fn ){
-		var port = require('./config').config.port;
-		server.listen( port, fn );
-	};
-
-	var url = function( ){
-		return server.url;
-	};
-
-	var getServer = function( ){
-		return server;
-	};
+	}
 
 	return {
-		listen: listen,
-		url: url,
-		getServer : getServer
+		start: start,
+		track: track,
+		addFilter: addFilter
 	};
 };
 
-module.exports.Collector = Collector;
+module.exports = Collector;
