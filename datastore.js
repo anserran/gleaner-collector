@@ -70,11 +70,11 @@ var DataStore = function( config ){
 			if ( err ){
 				cb(400);
 			}
-			else if (session && session.sessionkey ){
+			else if (session && session.sessionkey && session.enabled ){
 				var userSession = new UserSession();
 				userSession.session = session._id;
 				userSession.userId = userId;
-				userSession.usersessionkey = SHA1.b64(session._id.toString() + ':' + userId + ":" + config.sessionSalt );
+				userSession.usersessionkey = SHA1.b64(new Date().toString() + ':' + userId + ":" + config.sessionSalt );
 				userSession.ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
 				userSession.firstUpdate = new Date();
 				userSession.lastUpdate = new Date();
@@ -174,7 +174,7 @@ var DataStore = function( config ){
 	};
 
 	var checkSessionKey = function( userSessionKey, cb ){
-		UserSession.where('usersessionkey', userSessionKey).findOne(function( err, session){
+		UserSession.where('usersessionkey', userSessionKey).findOne(function( err, session ){
 			if ( session ){
 				session.lastUpdate = new Date();
 				session.save();
