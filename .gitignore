@@ -1,3 +1,5 @@
 node_modules/
 config.js
 gleaner-collector.log
+gleaner-collector.sublime-project
+gleaner-collector.sublime-workspace
