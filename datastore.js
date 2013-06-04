@@ -116,7 +116,7 @@ var DataStore = function( config ){
 				// FIXME add it to some other table??
 				break;
 			}
-			delete(traces[i].type)
+			delete(traces[i].type);
 		}
 
 		async.series([
