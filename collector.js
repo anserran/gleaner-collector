@@ -81,10 +81,15 @@ var Collector = function( configuration, dataStore, filtersList ){
 		} );
 	}
 
+	function countTraces( usersessionkey, cb ){
+		dataStore.countTraces( usersessionkey, cb );
+	}
+
 	return {
 		start: start,
 		track: track,
-		addFilter: addFilter
+		addFilter: addFilter,
+		countTraces: countTraces
 	};
 };
 

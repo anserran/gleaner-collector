@@ -21,17 +21,11 @@ var DatastoreMySQL = function( configuration ){
 			switch(traces[i].type){
 				case 'logic':
 				delete(traces[i].type);
-				logicTraces.push({
-					usersessionkey: req.headers.authorization,
-					json: JSON.stringify(traces[i])
-				});
+				logicTraces.push([req.headers.authorization, JSON.stringify(traces[i])]);
 				break;
 				case 'input':
 				delete(traces[i].type);
-				inputTraces.push({
-					usersessionkey: req.headers.authorization,
-					json: JSON.stringify(traces[i])
-				});
+				inputTraces.push([req.headers.authorization, JSON.stringify(traces[i])]);
 				break;
 				default:
 				// FIXME add it to some other table??
@@ -44,19 +38,52 @@ var DatastoreMySQL = function( configuration ){
 				cb(err);
 				return;
 			}
-			conn.query('INSERT INTO input_traces SET ?', inputTraces, function( err, result ){
+			var query = conn.query('INSERT INTO input_traces(usersessionkey, json) VALUES ' + mysql.escape(inputTraces), function( err, result ){
 				if ( err ){
 					conn.end();
 					cb(err);
 				}
 				else {
-					conn.query('INSERT INTO logic_traces SET ?', logicTraces, function( err, result ){
+					conn.query('INSERT INTO logic_traces(usersessionkey, json) VALUES ' + mysql.escape(logicTraces), function( err, result ){
 						conn.end();
 						cb(err);
 					});
 				}
 			});
 		});
+	};
+
+	var checkSessionKey = function( usersessionkey, cb ){
+		datastore.checkSessionKey(usersessionkey, cb);
+	};
+
+	var addSessionInfo = function( ){
+
+	};
+
+	var countTraces = function( usersessionkey, cb ){
+		pool.getConnection( function( err, conn ){
+			conn.query('SELECT COUNT(*) count FROM input_traces WHERE usersessionkey=?', usersessionkey, function( err, result ){
+				if ( err ){
+					conn.end();
+					cb(err);
+				}
+				else {
+					conn.query('SELECT COUNT(*) count FROM input_traces WHERE usersessionkey=?', usersessionkey, function( err, result2 ){
+						cb(err, result[0].count + result2[0].count );
+						conn.end();
+					});
+				}
+			});
+		});
+	};
+
+	return {
+		addTraces: addTraces,
+		startSession: startSession,
+		checkSessionKey: checkSessionKey,
+		addSessionInfo: addSessionInfo,
+		countTraces: countTraces
 	};
 };
 

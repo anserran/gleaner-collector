@@ -1,15 +1,17 @@
 var DataStore = function( config ){
-	var mongoose = require('mongoose');
+	var MongoClient = require('mongodb').MongoClient,
+		Server = require('mongodb').Server;
 	var async = require('async');
 	var SHA1 = new (require('jshashes').SHA1)();
-
 	var copyProperties = require('./gleaner-utils').copyProperties;
 
-	mongoose.connect(config.mongoose_auth);
+	var db;
+	var mongoClient = new MongoClient( new Server(config.mongodb.host, config.mongodb.port));
+	mongoClient.open( function( err, mongoClient ){
+		db = mongoClient.db(config.mongodb.database);
+	});
 
-	var Schema = mongoose.Schema,
-		ObjectId = Schema.ObjectId;
-
+	/*
 	var InputTraceSchema = new Schema({
 		usersessionkey: { type: String },
 		type : { type: String, required: true },
@@ -47,16 +49,12 @@ var DataStore = function( config ){
 		firstUpdate: { type: Date, required: true },
 		lastUpdate: { type: Date, required: true }
 	});
+	*/
 
-	mongoose.model('InputTrace', InputTraceSchema);
-	mongoose.model('LogicTrace', LogicTraceSchema);
-	mongoose.model('Session', SessionScheme);
-	mongoose.model('UserSession', UserSessionSchema);
-
-	var InputTrace = mongoose.model('InputTrace');
-	var LogicTrace = mongoose.model('LogicTrace');
-	var Session = mongoose.model('Session');
-	var UserSession = mongoose.model('UserSession');
+	var InputTrace = db.collection('InputTrace');
+	var LogicTrace = db.collection('LogicTrace');
+	var Session = db.collection('Session');
+	var UserSession = db.collection('UserSession');
 
 	/**
 	 * Start session
@@ -66,19 +64,19 @@ var DataStore = function( config ){
 	 * @param  {Function} cb      callback with an error and a session key
 	 */
 	var startSession = function( req, userId, sessionkey, cb ){
-		Session.where('sessionkey', sessionkey).findOne( function( err, session ){
+		Session.findOne({'sessionkey': sessionkey}, function( err, session ){
 			if ( err ){
 				cb(400);
 			}
 			else if (session && session.sessionkey && session.enabled ){
-				var userSession = new UserSession();
+				var userSession = {};
 				userSession.session = session._id;
 				userSession.userId = userId;
 				userSession.usersessionkey = SHA1.b64(new Date().toString() + ':' + userId + ":" + config.sessionSalt );
 				userSession.ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
 				userSession.firstUpdate = new Date();
 				userSession.lastUpdate = new Date();
-				userSession.save( function( err, s ){
+				UserSession.insert(userSession, function( err, s ){
 						if (err) {
 							cb(500);
 							console.log('error', err);
@@ -122,7 +120,7 @@ var DataStore = function( config ){
 		async.series([
 			function( callback ){
 				if ( logicTraces.length > 0 ){
-					LogicTrace.create(logicTraces, function( err ){
+					LogicTrace.insert(logicTraces, function( err ){
 						if (err){
 							callback(err);
 						}
@@ -138,7 +136,7 @@ var DataStore = function( config ){
 
 			function( callback ){
 				if (inputTraces.length > 0){
-					InputTrace.create(inputTraces, function( err ){
+					InputTrace.insert(inputTraces, function( err ){
 						if (err){
 							callback(err);
 						}
@@ -175,10 +173,9 @@ var DataStore = function( config ){
 	};
 
 	var checkSessionKey = function( userSessionKey, cb ){
-		UserSession.where('usersessionkey', userSessionKey).findOne(function( err, session ){
+		UserSession.findOne({'usersessionkey': userSessionKey}, function( err, session ){
 			if ( session ){
-				session.lastUpdate = new Date();
-				session.save();
+				UserSession.update({_id: session._id}, {$set: { lastUpdate: new Date()}});
 				cb(true);
 			}
 			else
@@ -186,11 +183,25 @@ var DataStore = function( config ){
 		});
 	};
 
+	var countTraces = function( usersessionkey, cb ){
+		LogicTrace.count({usersessionkey: usersessionkey}, function( err, count ){
+			if ( err ){
+				cb(err);
+			}
+			else {
+				InputTrace.count( {usersessionkey: usersessionkey}, function( err, count2 ){
+					cb( err, count + count2 );
+				});
+			}
+		});
+	};
+
 	return {
 		addTraces: addTraces,
 		startSession: startSession,
 		addSessionInfo: addSessionInfo,
-		checkSessionKey: checkSessionKey
+		checkSessionKey: checkSessionKey,
+		countTraces: countTraces
 	};
 
 };
