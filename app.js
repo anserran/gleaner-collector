@@ -14,10 +14,7 @@ var GleanerCollector = function( configuration, filters ){
 		configuration = defaultConfiguration;
 	}
 	var dataStore = new DataStore(configuration);
-	var collector = new Collector(configuration, dataStore,
-		[
-			require('./gleaner-utils.js').serverTimestamp
-		]);
+	var collector = new Collector(configuration, dataStore, []);
 
 	for (var i = filters.length - 1; i >= 0; i--) {
 		collector.addFilter(filters[i]);
