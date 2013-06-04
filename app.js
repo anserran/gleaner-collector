@@ -1,5 +1,6 @@
 // Data store (MongoDB wrapper)
 var DataStore = require('./datastore.js');
+var DataStoreMySQL = require('./datastore-mysql.js');
 var Collector = require('./collector.js');
 
 var GleanerCollector = function( configuration, filters ){
@@ -13,7 +14,7 @@ var GleanerCollector = function( configuration, filters ){
 	else {
 		configuration = defaultConfiguration;
 	}
-	var dataStore = new DataStore(configuration);
+	var dataStore = configuration.compact ? new DataStoreMySQL(configuration) : new DataStore(configuration);
 	var collector = new Collector(configuration, dataStore, []);
 
 	for (var i = filters.length - 1; i >= 0; i--) {
