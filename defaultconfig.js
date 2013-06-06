@@ -2,18 +2,19 @@
 Collector configuration
 */
 module.exports = {
-	// authenticator: require('./authenticators/eadauthenticator.js').eadauthenticator,
-	authenticator: require('./authenticators/eadauthenticator.js').ipauthenticator,
-	// Salt for sessions generation
-	sessionSalt: 'your-salt-here',
-
+	// Salt for user sessions key generation
+	usersessionSalt: 'your-salt-here',
+	// shared mongodb database
+	db: null,
+	// mongodb configuration
 	mongodb : {
 		host: 'localhost',
 		port: 27017,
 		database: 'gleaner-collector'
 	},
-	// If compact is set to true, all traces will be stored as JSON strings in a MySQL database
-	compact: true,
+	// If mysql is set to true, all traces will be stored as JSON strings in a MySQL database
+	usemysql: false,
+	// mysql configuration
 	mysql: {
 		host: 'localhost',
 		user: 'root',

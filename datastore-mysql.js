@@ -63,14 +63,32 @@ var DatastoreMySQL = function( configuration ){
 
 	var countTraces = function( usersessionkey, cb ){
 		pool.getConnection( function( err, conn ){
-			conn.query('SELECT COUNT(*) count FROM input_traces WHERE usersessionkey=?', usersessionkey, function( err, result ){
+			conn.query('SELECT COUNT(*) count FROM logic_traces WHERE usersessionkey=?', usersessionkey, function( err, result ){
 				if ( err ){
 					conn.end();
 					cb(err);
 				}
 				else {
+					var count = result[0].count;
 					conn.query('SELECT COUNT(*) count FROM input_traces WHERE usersessionkey=?', usersessionkey, function( err, result2 ){
-						cb(err, result[0].count + result2[0].count );
+						cb(err, count + result2[0].count );
+						conn.end();
+					});
+				}
+			});
+		});
+	};
+
+	var removeTraces = function( usersessionkey, cb ){
+		pool.getConnection( function( err, conn ){
+			conn.query('DELETE FROM logic_traces WHERE usersessionkey=?', usersessionkey, function( err ){
+				if ( err ){
+					conn.end();
+					cb(err);
+				}
+				else {
+					conn.query('DELETE FROM input_traces WHERE usersessionkey=?', usersessionkey, function( err ){
+						cb(err);
 						conn.end();
 					});
 				}
@@ -83,7 +101,8 @@ var DatastoreMySQL = function( configuration ){
 		startSession: startSession,
 		checkSessionKey: checkSessionKey,
 		addSessionInfo: addSessionInfo,
-		countTraces: countTraces
+		countTraces: countTraces,
+		removeTraces: removeTraces
 	};
 };
 

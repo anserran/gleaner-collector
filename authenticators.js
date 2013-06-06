@@ -34,3 +34,17 @@ module.exports.ipauthenticator = (function( ){
 		}
 	};
 })();
+
+module.exports.userauthenticator = (function( ){
+	return {
+		authenticate: function( req, cb ){
+			// FIXME
+			if ( req.headers.authorization ){
+				cb( null, req.headers.authorization );
+			}
+			else {
+				cb(401);
+			}
+		}
+	};
+});

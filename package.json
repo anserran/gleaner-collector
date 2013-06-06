@@ -13,7 +13,7 @@
       "email": "angelserranolaguna@gmail.com"
     }
   ],
-  "main": "./gleaner-collector.js",
+  "main": "./collector.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/anserran/gleaner-collector.git"
