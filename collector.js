@@ -79,8 +79,8 @@ var GleanerCollector = function( externalConfiguration ){
 		dataStore.countTraces( usersessionId, cb );
 	};
 
-	var removeTraces = function( usersessionId, cb ){
-		dataStore.removeTraces( usersessionId, cb);
+	var removeTraces = function( usersessionIds, cb ){
+		dataStore.removeTraces( usersessionIds, cb);
 	};
 
 	return {

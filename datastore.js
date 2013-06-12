@@ -229,17 +229,15 @@ var DataStore = function( config ){
 		});
 	};
 
-	var removeTraces = function( usersessionId, cb ){
-		logictraces.remove({ usersessionId: usersessionId }, function( err ){
-			if ( err ){
-				cb(err);
+	var removeTraces = function( usersessionIds, cb ){
+		async.parallel([
+			function( callback ){
+				logictraces.remove({ usersessionId: { $in: usersessionIds } }, callback);
+			},
+			function( callback ){
+				inputtraces.remove({ usersessionId: { $in: usersessionIds } }, callback);
 			}
-			else {
-				inputtraces.remove({ usersessionId: usersessionId }, function( err ){
-					cb(err);
-				});
-			}
-		});
+		], cb );
 	};
 
 	return {
