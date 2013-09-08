@@ -19,7 +19,7 @@ module.exports.eadauthenticator = (function( ){
 module.exports.ipauthenticator = (function( ){
 	return {
 		authenticate: function( req, cb ){
-			if ( req.headers.authorization && req.headers.authorization !== "anonymus" ){
+			if ( req.headers.authorization && req.headers.authorization !== "anonymous" ){
 				cb( null, req.headers.authorization );
 			}
 			else {

@@ -62,7 +62,7 @@ var DataStore = function( config ){
 			game: ObjectID(),
 			owner: 'ownerName',
 			enabled: true,
-			authenticator: 'anonymus' | 'eadventure' | 'user'
+			authenticator: 'anonymous' | 'eadventure' | 'user'
 		}
 	 */
 	var usersessions;
@@ -91,7 +91,7 @@ var DataStore = function( config ){
 				cb(400);
 			}
 			else if (session && session.enabled ){
-				var authenticator = getAuthenticator(session.authenticator || 'anonymus');
+				var authenticator = getAuthenticator(session.authenticator || 'anonymous');
 				authenticator.authenticate( req, function( err, userId ){
 					if ( err ){
 						cb( err );
@@ -146,7 +146,7 @@ var DataStore = function( config ){
 
 	var getAuthenticator = function( authenticator ){
 		switch( authenticator ){
-			case 'anonymus':
+			case 'anonymous':
 				return ipauthenticator;
 			case 'eadventure':
 				return eadauthenticator;
