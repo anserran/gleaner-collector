@@ -1,9 +1,11 @@
 var DataStore = function( config ){
 	var async = require('async');
 	var SHA1 = new (require('jshashes').SHA1)();
-	var ipauthenticator = require('./authenticators').ipauthenticator;
-	var eadauthenticator = require('./authenticators').eadauthenticator;
-	var userauthenticator = require('./authenticators').userauthenticator;
+	var authenticators = require('./authenticators');
+	var ipauthenticator = authenticators.ipauthenticator;
+	var eadauthenticator = authenticators.eadauthenticator;
+	var userauthenticator = authenticators.userauthenticator;
+	var nicknameauthenticator = authenticators.nicknameauthenticator;
 
 	// Database
 	var db = config.db;
@@ -152,6 +154,8 @@ var DataStore = function( config ){
 				return eadauthenticator;
 			case 'user':
 				return userauthenticator;
+			case 'nickname':
+				return nicknameauthenticator;
 			default:
 				return ipauthenticator;
 		}

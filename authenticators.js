@@ -48,3 +48,18 @@ module.exports.userauthenticator = (function( ){
 		}
 	};
 });
+
+module.exports.nicknameauthenticator = (function( ){
+	return {
+		authenticate: function( req, cb ){
+			if ( req.headers.authorization ){
+				var nickname = req.headers.authorization;
+				var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
+				cb( null, nickname + ":" + ip );
+			}
+			else {
+				cb(401);
+			}
+		}
+	};
+})();
