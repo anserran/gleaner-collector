@@ -23,9 +23,10 @@ module.exports.ipauthenticator = (function( ){
 				cb( null, req.headers.authorization );
 			}
 			else {
+				var user = "user" + Math.round(Math.random() * 1000);
 				var ip = req.header('x-forwarded-for') || req.connection.remoteAddress;
 				if ( ip ){
-					cb( null, ip );
+					cb( null, user + ":" + ip );
 				}
 				else {
 					cb(401);
